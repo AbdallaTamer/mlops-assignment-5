@@ -1,0 +1,70 @@
+name: CI/CD Model Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    name: Validate and Train
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Pull Data (Simulated DVC)
+        run: |
+          echo "Simulating dvc pull..."
+          # In a real scenario, this would be: dvc pull
+
+      - name: Train Model
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+        run: python train.py
+
+      - name: Upload Run ID Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-id-artifact
+          path: model_info.txt
+
+  deploy:
+    name: Deploy to Production
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Run ID Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: run-id-artifact
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install MLflow
+        run: pip install mlflow
+
+      - name: Check Threshold Logic
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+        run: python check_threshold.py
+
+      - name: Mock Build and Containerize
+        run: |
+          RUN_ID=$(cat model_info.txt)
+          echo "Building Docker image for Run ID: $RUN_ID"
+          docker build --build-arg RUN_ID=$RUN_ID -t deployed-model:latest .
