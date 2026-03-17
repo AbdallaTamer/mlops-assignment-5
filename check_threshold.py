@@ -18,7 +18,7 @@ except Exception as e:
     print(f"Warning: Could not fetch from remote MLflow URI. Simulating metric for CI test.")
     # SIMULATION FOR GITHUB ACTIONS: 
     # Change this variable to test Pass/Fail scenarios!
-    accuracy = 0.90 
+    accuracy = 0.80 
 
 if accuracy < 0.85:
     print(f"DEPLOYMENT BLOCKED: Accuracy {accuracy} is below the 0.85 threshold.")
